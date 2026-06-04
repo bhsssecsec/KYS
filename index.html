@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Search - KYS</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container {
+            max-width: min(1600px, 100%);
+            margin: 0 auto;
+        }
+        .container.results-mode {
+            max-width: 100%;
+        }
+        h1 {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+        .search-box {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            margin-bottom: 30px;
+        }
+        .search-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+        label {
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #333;
+        }
+        select, input {
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 5px;
+            font-size: 1em;
+        }
+        select:focus, input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        .button-group {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+        }
+        button {
+            padding: 12px 30px;
+            font-size: 1em;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+        .btn-search {
+            background: #667eea;
+            color: white;
+        }
+        .btn-search:hover {
+            background: #5568d3;
+        }
+        .btn-reset {
+            background: #f0f0f0;
+            color: #333;
+        }
+        .btn-reset:hover {
+            background: #e0e0e0;
+        }
+        .results {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 20px;
+        }
+        .results.single-result {
+            grid-template-columns: minmax(280px, min(100%, 720px));
+            justify-content: center;
+        }
+        .student-card {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            overflow: hidden;
+            transition: all 0.3s;
+        }
+        .student-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+        }
+        .card-photo {
+            width: 100%;
+            height: 200px;
+            object-fit: contain;
+            background: #f0f0f0;
+        }
+        .single-result .student-card {
+            width: min(100%, 720px);
+        }
+        .single-result .card-photo {
+            height: min(75vh, 720px);
+        }
+        .card-content {
+            padding: 15px;
+        }
+        .result-nav {
+            display: none;
+            gap: 12px;
+            justify-content: center;
+            padding: 16px 15px 0;
+        }
+        .single-result .result-nav {
+            display: flex;
+        }
+        .result-nav button {
+            min-width: 130px;
+        }
+        .result-nav button:disabled {
+            cursor: not-allowed;
+            opacity: 0.45;
+        }
+        .card-title {
+            font-size: 1.1em;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 8px;
+        }
+        .card-info {
+            color: #666;
+            font-size: 0.9em;
+            margin: 6px 0;
+        }
+        .info-label {
+            font-weight: 600;
+            color: #667eea;
+        }
+        .no-results {
+            text-align: center;
+            color: #999;
+            font-size: 1.2em;
+            padding: 40px;
+            background: white;
+            border-radius: 8px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎓 Student Search</h1>
+        
+        <div class="search-box">
+            <div class="search-row">
+                <div class="form-group">
+                    <label for="classSelect">Class</label>
+                    <select id="classSelect" onchange="search()">
+                        <option value="">-- Select Class --</option>
+                        <option value="IX A">IX A</option>
+                        <option value="IX B">IX B</option>
+                        <option value="IX C">IX C</option>
+                        <option value="X A">X A</option>
+                        <option value="X B">X B</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="rollInput">Roll No</label>
+                    <input type="number" id="rollInput" placeholder="Enter roll number" onchange="search()">
+                </div>
+                
+                <div class="form-group">
+                    <label for="nameInput">Name</label>
+                    <input type="text" id="nameInput" placeholder="Enter student name" oninput="search()">
+                </div>
+            </div>
+            
+            <div class="button-group">
+                <button class="btn-search" onclick="search()">Search</button>
+                <button class="btn-reset" onclick="reset()">Reset</button>
+            </div>
+        </div>
+        
+        <div id="results" class="results"></div>
+    </div>
+
+    <script>
+        const studentsData = [{"rollNo": 1, "class": "IX A"},{"rollNo": 2, "class": "IX A"},{"rollNo": 3, "class": "IX A"},{"rollNo": 4, "class": "IX A"},{"rollNo": 5, "class": "IX A"},{"rollNo": 6, "class": "IX A"},{"rollNo": 7, "class": "IX A"},{"rollNo": 8, "class": "IX A"},{"rollNo": 9, "class": "IX A"},{"rollNo": 10, "class": "IX A"},{"rollNo": 11, "class": "IX A"},{"rollNo": 12, "class": "IX A"},{"rollNo": 13, "class": "IX A"},{"rollNo": 14, "class": "IX A"},{"rollNo": 15, "class": "IX A"},{"rollNo": 16, "class": "IX A"},{"rollNo": 17, "class": "IX A"},{"rollNo": 18, "class": "IX A"},{"rollNo": 19, "class": "IX A"},{"rollNo": 20, "class": "IX A"},{"rollNo": 21, "class": "IX A"},{"rollNo": 22, "class": "IX A"},{"rollNo": 23, "class": "IX A"},{"rollNo": 24, "class": "IX A"},{"rollNo": 25, "class": "IX A"},{"rollNo": 26, "class": "IX A"},{"rollNo": 27, "class": "IX A"},{"rollNo": 28, "class": "IX A"},{"rollNo": 29, "class": "IX A"},{"rollNo": 31, "class": "IX A"},{"rollNo": 32, "class": "IX A"},{"rollNo": 33, "class": "IX A"},{"rollNo": 34, "class": "IX A"},{"rollNo": 35, "class": "IX A"},{"rollNo": 36, "class": "IX A"},{"rollNo": 37, "class": "IX A"},{"rollNo": 38, "class": "IX A"},{"rollNo": 39, "class": "IX A"},{"rollNo": 40, "class": "IX A"},{"rollNo": 41, "class": "IX A"},{"rollNo": 42, "class": "IX A"},{"rollNo": 43, "class": "IX A"},{"rollNo": 44, "class": "IX A"},{"rollNo": 45, "class": "IX A"},{"rollNo": 46, "class": "IX A"},{"rollNo": 47, "class": "IX A"},{"rollNo": 48, "class": "IX A"},{"rollNo": 49, "class": "IX A"},{"rollNo": 50, "class": "IX A"},{"rollNo": 51, "class": "IX A"},{"rollNo": 52, "class": "IX A"},{"rollNo": 53, "class": "IX A"},{"rollNo": 54, "class": "IX A"},{"rollNo": 55, "class": "IX A"},{"rollNo": 56, "class": "IX A"},{"rollNo": 57, "class": "IX A"},{"rollNo": 58, "class": "IX A"},{"rollNo": 59, "class": "IX A"},{"rollNo": 1, "class": "IX B"},{"rollNo": 2, "class": "IX B"},{"rollNo": 3, "class": "IX B"},{"rollNo": 4, "class": "IX B"},{"rollNo": 5, "class": "IX B"},{"rollNo": 6, "class": "IX B"},{"rollNo": 7, "class": "IX B"},{"rollNo": 8, "class": "IX B"},{"rollNo": 9, "class": "IX B"},{"rollNo": 10, "class": "IX B"},{"rollNo": 11, "class": "IX B"},{"rollNo": 12, "class": "IX B"},{"rollNo": 13, "class": "IX B"},{"rollNo": 14, "class": "IX B"},{"rollNo": 15, "class": "IX B"},{"rollNo": 16, "class": "IX B"},{"rollNo": 17, "class": "IX B"},{"rollNo": 18, "class": "IX B"},{"rollNo": 19, "class": "IX B"},{"rollNo": 20, "class": "IX B"},{"rollNo": 21, "class": "IX B"},{"rollNo": 22, "class": "IX B"},{"rollNo": 23, "class": "IX B"},{"rollNo": 24, "class": "IX B"},{"rollNo": 25, "class": "IX B"},{"rollNo": 26, "class": "IX B"},{"rollNo": 27, "class": "IX B"},{"rollNo": 28, "class": "IX B"},{"rollNo": 29, "class": "IX B"},{"rollNo": 30, "class": "IX B"},{"rollNo": 31, "class": "IX B"},{"rollNo": 32, "class": "IX B"},{"rollNo": 33, "class": "IX B"},{"rollNo": 34, "class": "IX B"},{"rollNo": 35, "class": "IX B"},{"rollNo": 36, "class": "IX B"},{"rollNo": 37, "class": "IX B"},{"rollNo": 38, "class": "IX B"},{"rollNo": 39, "class": "IX B"},{"rollNo": 40, "class": "IX B"},{"rollNo": 41, "class": "IX B"},{"rollNo": 42, "class": "IX B"},{"rollNo": 43, "class": "IX B"},{"rollNo": 44, "class": "IX B"},{"rollNo": 45, "class": "IX B"},{"rollNo": 46, "class": "IX B"},{"rollNo": 48, "class": "IX B"},{"rollNo": 49, "class": "IX B"},{"rollNo": 50, "class": "IX B"},{"rollNo": 51, "class": "IX B"},{"rollNo": 52, "class": "IX B"},{"rollNo": 53, "class": "IX B"},{"rollNo": 54, "class": "IX B"},{"rollNo": 55, "class": "IX B"},{"rollNo": 56, "class": "IX B"},{"rollNo": 57, "class": "IX B"},{"rollNo": 58, "class": "IX B"},{"rollNo": 59, "class": "IX B"},{"rollNo": 1, "class": "IX C"},{"rollNo": 2, "class": "IX C"},{"rollNo": 3, "class": "IX C"},{"rollNo": 4, "class": "IX C"},{"rollNo": 5, "class": "IX C"},{"rollNo": 6, "class": "IX C"},{"rollNo": 7, "class": "IX C"},{"rollNo": 8, "class": "IX C"},{"rollNo": 9, "class": "IX C"},{"rollNo": 10, "class": "IX C"},{"rollNo": 11, "class": "IX C"},{"rollNo": 12, "class": "IX C"},{"rollNo": 13, "class": "IX C"},{"rollNo": 14, "class": "IX C"},{"rollNo": 15, "class": "IX C"},{"rollNo": 16, "class": "IX C"},{"rollNo": 17, "class": "IX C"},{"rollNo": 18, "class": "IX C"},{"rollNo": 19, "class": "IX C"},{"rollNo": 20, "class": "IX C"},{"rollNo": 21, "class": "IX C"},{"rollNo": 22, "class": "IX C"},{"rollNo": 23, "class": "IX C"},{"rollNo": 24, "class": "IX C"},{"rollNo": 25, "class": "IX C"},{"rollNo": 26, "class": "IX C"},{"rollNo": 27, "class": "IX C"},{"rollNo": 28, "class": "IX C"},{"rollNo": 29, "class": "IX C"},{"rollNo": 30, "class": "IX C"},{"rollNo": 31, "class": "IX C"},{"rollNo": 32, "class": "IX C"},{"rollNo": 33, "class": "IX C"},{"rollNo": 34, "class": "IX C"},{"rollNo": 35, "class": "IX C"},{"rollNo": 36, "class": "IX C"},{"rollNo": 37, "class": "IX C"},{"rollNo": 38, "class": "IX C"},{"rollNo": 39, "class": "IX C"},{"rollNo": 40, "class": "IX C"},{"rollNo": 41, "class": "IX C"},{"rollNo": 42, "class": "IX C"},{"rollNo": 43, "class": "IX C"},{"rollNo": 44, "class": "IX C"},{"rollNo": 45, "class": "IX C"},{"rollNo": 46, "class": "IX C"},{"rollNo": 47, "class": "IX C"},{"rollNo": 48, "class": "IX C"},{"rollNo": 49, "class": "IX C"},{"rollNo": 50, "class": "IX C"},{"rollNo": 51, "class": "IX C"},{"rollNo": 52, "class": "IX C"},{"rollNo": 53, "class": "IX C"},{"rollNo": 54, "class": "IX C"},{"rollNo": 55, "class": "IX C"},{"rollNo": 56, "class": "IX C"},{"rollNo": 57, "class": "IX C"},{"rollNo": 58, "class": "IX C"},{"rollNo": 59, "class": "IX C"},{"rollNo": 60, "class": "IX C"},{"rollNo": 61, "class": "IX C"},{"rollNo": 1, "class": "X A"},{"rollNo": 2, "class": "X A"},{"rollNo": 3, "class": "X A"},{"rollNo": 4, "class": "X A"},{"rollNo": 5, "class": "X A"},{"rollNo": 6, "class": "X A"},{"rollNo": 7, "class": "X A"},{"rollNo": 8, "class": "X A"},{"rollNo": 9, "class": "X A"},{"rollNo": 10, "class": "X A"},{"rollNo": 11, "class": "X A"},{"rollNo": 12, "class": "X A"},{"rollNo": 13, "class": "X A"},{"rollNo": 14, "class": "X A"},{"rollNo": 15, "class": "X A"},{"rollNo": 16, "class": "X A"},{"rollNo": 17, "class": "X A"},{"rollNo": 18, "class": "X A"},{"rollNo": 19, "class": "X A"},{"rollNo": 20, "class": "X A"},{"rollNo": 21, "class": "X A"},{"rollNo": 22, "class": "X A"},{"rollNo": 23, "class": "X A"},{"rollNo": 24, "class": "X A"},{"rollNo": 25, "class": "X A"},{"rollNo": 26, "class": "X A"},{"rollNo": 27, "class": "X A"},{"rollNo": 28, "class": "X A"},{"rollNo": 29, "class": "X A"},{"rollNo": 30, "class": "X A"},{"rollNo": 31, "class": "X A"},{"rollNo": 32, "class": "X A"},{"rollNo": 33, "class": "X A"},{"rollNo": 34, "class": "X A"},{"rollNo": 35, "class": "X A"},{"rollNo": 36, "class": "X A"},{"rollNo": 37, "class": "X A"},{"rollNo": 38, "class": "X A"},{"rollNo": 39, "class": "X A"},{"rollNo": 40, "class": "X A"},{"rollNo": 41, "class": "X A"},{"rollNo": 42, "class": "X A"},{"rollNo": 43, "class": "X A"},{"rollNo": 44, "class": "X A"},{"rollNo": 45, "class": "X A"},{"rollNo": 46, "class": "X A"},{"rollNo": 47, "class": "X A"},{"rollNo": 48, "class": "X A"},{"rollNo": 49, "class": "X A"},{"rollNo": 50, "class": "X A"},{"rollNo": 51, "class": "X A"},{"rollNo": 52, "class": "X A"},{"rollNo": 53, "class": "X A"},{"rollNo": 54, "class": "X A"},{"rollNo": 55, "class": "X A"},{"rollNo": 56, "class": "X A"},{"rollNo": 57, "class": "X A"},{"rollNo": 58, "class": "X A"},{"rollNo": 59, "class": "X A"},{"rollNo": 60, "class": "X A"},{"rollNo": 61, "class": "X A"},{"rollNo": 62, "class": "X A"},{"rollNo": 63, "class": "X A"},{"rollNo": 64, "class": "X A"},{"rollNo": 65, "class": "X A"},{"rollNo": 66, "class": "X A"},{"rollNo": 67, "class": "X A"},{"rollNo": 68, "class": "X A"},{"rollNo": 69, "class": "X A"},{"rollNo": 70, "class": "X A"},{"rollNo": 71, "class": "X A"},{"rollNo": 72, "class": "X A"},{"rollNo": 73, "class": "X A"},{"rollNo": 74, "class": "X A"},{"rollNo": 1, "class": "X B"},{"rollNo": 2, "class": "X B"},{"rollNo": 3, "class": "X B"},{"rollNo": 4, "class": "X B"},{"rollNo": 5, "class": "X B"},{"rollNo": 6, "class": "X B"},{"rollNo": 7, "class": "X B"},{"rollNo": 8, "class": "X B"},{"rollNo": 9, "class": "X B"},{"rollNo": 10, "class": "X B"},{"rollNo": 11, "class": "X B"},{"rollNo": 12, "class": "X B"},{"rollNo": 13, "class": "X B"},{"rollNo": 14, "class": "X B"},{"rollNo": 15, "class": "X B"},{"rollNo": 16, "class": "X B"},{"rollNo": 17, "class": "X B"},{"rollNo": 18, "class": "X B"},{"rollNo": 19, "class": "X B"},{"rollNo": 20, "class": "X B"},{"rollNo": 21, "class": "X B"},{"rollNo": 22, "class": "X B"},{"rollNo": 23, "class": "X B"},{"rollNo": 24, "class": "X B"},{"rollNo": 25, "class": "X B"},{"rollNo": 26, "class": "X B"},{"rollNo": 27, "class": "X B"},{"rollNo": 28, "class": "X B"},{"rollNo": 29, "class": "X B"},{"rollNo": 30, "class": "X B"},{"rollNo": 31, "class": "X B"},{"rollNo": 32, "class": "X B"},{"rollNo": 33, "class": "X B"},{"rollNo": 34, "class": "X B"},{"rollNo": 35, "class": "X B"},{"rollNo": 36, "class": "X B"},{"rollNo": 37, "class": "X B"},{"rollNo": 38, "class": "X B"},{"rollNo": 39, "class": "X B"},{"rollNo": 40, "class": "X B"},{"rollNo": 41, "class": "X B"},{"rollNo": 42, "class": "X B"},{"rollNo": 43, "class": "X B"},{"rollNo": 44, "class": "X B"},{"rollNo": 45, "class": "X B"},{"rollNo": 46, "class": "X B"},{"rollNo": 47, "class": "X B"},{"rollNo": 48, "class": "X B"},{"rollNo": 49, "class": "X B"},{"rollNo": 50, "class": "X B"},{"rollNo": 51, "class": "X B"},{"rollNo": 52, "class": "X B"},{"rollNo": 53, "class": "X B"},{"rollNo": 54, "class": "X B"},{"rollNo": 55, "class": "X B"},{"rollNo": 56, "class": "X B"},{"rollNo": 57, "class": "X B"},{"rollNo": 58, "class": "X B"},{"rollNo": 59, "class": "X B"},{"rollNo": 60, "class": "X B"},{"rollNo": 61, "class": "X B"},{"rollNo": 62, "class": "X B"},{"rollNo": 63, "class": "X B"},{"rollNo": 64, "class": "X B"},{"rollNo": 65, "class": "X B"},{"rollNo": 66, "class": "X B"},{"rollNo": 67, "class": "X B"},{"rollNo": 68, "class": "X B"},{"rollNo": 69, "class": "X B"},{"rollNo": 70, "class": "X B"},{"rollNo": 71, "class": "X B"}];
+
+        studentsData.push(
+            { rollNo: 60, class: 'IX A' },
+            { rollNo: 60, class: 'IX B' }
+        );
+        studentsData.sort((a, b) => a.class.localeCompare(b.class) || a.rollNo - b.rollNo);
+        let studentNameOverrides = {
+            'IX A:1': 'ALICESA VANLALREMUATI'
+        };
+        let activeStudent = null;
+
+        fetch('student_names.json')
+            .then(response => response.ok ? response.json() : {})
+            .then(names => {
+                studentNameOverrides = { ...studentNameOverrides, ...names };
+                if (document.getElementById('nameInput').value.trim()) search();
+            })
+            .catch(() => {});
+
+        function studentKey(student) {
+            return `${student.class}:${student.rollNo}`;
+        }
+
+        function getStudentName(student) {
+            return studentNameOverrides[studentKey(student)] || '';
+        }
+
+        function getStudentLabel(student) {
+            return getStudentName(student) || `Roll #${student.rollNo}`;
+        }
+
+        function normalizeSearchText(value) {
+            return String(value || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+        }
+
+        function search() {
+            const cls = document.getElementById('classSelect').value;
+            const roll = document.getElementById('rollInput').value;
+            const name = document.getElementById('nameInput').value;
+            const normalizedName = normalizeSearchText(name);
+            
+            const results = studentsData.filter(s => {
+                const studentName = getStudentName(s);
+                const nameMatch = !normalizedName || normalizeSearchText(studentName).includes(normalizedName);
+                return (!cls || s.class === cls) && (!roll || s.rollNo == roll) && nameMatch;
+            });
+            
+            const resultsDiv = document.getElementById('results');
+            document.querySelector('.container').classList.add('results-mode');
+            resultsDiv.classList.toggle('single-result', results.length === 1);
+            if (results.length === 0) {
+                activeStudent = null;
+                resultsDiv.innerHTML = '<div class="no-results">No students found</div>';
+            } else {
+                activeStudent = results.length === 1 ? results[0] : null;
+                resultsDiv.innerHTML = results.map(s => {
+                    const studentName = getStudentLabel(s);
+                    const classStudents = getClassStudents(s.class);
+                    const studentIndex = classStudents.findIndex(item => item.rollNo === s.rollNo);
+                    const hasPrevious = results.length === 1 && studentIndex > 0;
+                    const hasNext = results.length === 1 && studentIndex >= 0 && studentIndex < classStudents.length - 1;
+                    let photoPath = '';
+                    if (s.class === 'IX A') photoPath = `./IXA/${s.rollNo}_IX A.jpg`;
+                    else if (s.class === 'IX B') photoPath = `./IXB/XI B done_${s.rollNo}.jpg`;
+                    else if (s.class === 'IX C') photoPath = `./IXC/${s.rollNo}_IX C.jpg`;
+                    else if (s.class === 'X A') photoPath = `./XA/${s.rollNo}_X A.jpg`;
+                    else if (s.class === 'X B') photoPath = `./XB/X B_${s.rollNo}.jpg`;
+                    
+                    return `
+                        <div class="student-card">
+                            <img src="${photoPath}" alt="Roll ${s.rollNo}" class="card-photo" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22200%22 height=%22200%22><rect fill=%22%23ddd%22 width=%22200%22 height=%22200%22/></svg>'">
+                            <div class="card-content">
+                                <div class="card-title">${studentName}</div>
+                                <div class="card-info"><span class="info-label">Class:</span> ${s.class}</div>
+                                <div class="card-info"><span class="info-label">Roll:</span> ${s.rollNo}</div>
+                                <div class="result-nav">
+                                    <button class="btn-reset" onclick="navigateStudent(-1)" ${hasPrevious ? '' : 'disabled'}>Previous</button>
+                                    <button class="btn-search" onclick="navigateStudent(1)" ${hasNext ? '' : 'disabled'}>Next</button>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            }
+        }
+
+        function getClassStudents(className) {
+            return studentsData
+                .filter(s => s.class === className)
+                .sort((a, b) => a.rollNo - b.rollNo);
+        }
+
+        function navigateStudent(direction) {
+            if (!activeStudent) return;
+
+            const classStudents = getClassStudents(activeStudent.class);
+            const currentIndex = classStudents.findIndex(s => s.rollNo === activeStudent.rollNo);
+            const nextStudent = classStudents[currentIndex + direction];
+            if (!nextStudent) return;
+
+            document.getElementById('classSelect').value = nextStudent.class;
+            document.getElementById('rollInput').value = nextStudent.rollNo;
+            document.getElementById('nameInput').value = '';
+            search();
+        }
+
+        function reset() {
+            document.getElementById('classSelect').value = '';
+            document.getElementById('rollInput').value = '';
+            document.getElementById('nameInput').value = '';
+            document.getElementById('results').innerHTML = '';
+            document.getElementById('results').classList.remove('single-result');
+            document.querySelector('.container').classList.remove('results-mode');
+            activeStudent = null;
+        }
+    </script>
+</body>
+</html>
